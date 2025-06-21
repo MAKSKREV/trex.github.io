@@ -1,86 +1,74 @@
-.game {
-    /* ширина игровой области */
+  .game {
     width: 600px;
-    /* высота игровой области */
     height: 200px;
-    /* рамка серого цвета и отступы вокруг неё */
     border: 1px solid rgb(122, 122, 122);
-    /* автоматические отступы */
     margin: auto;
+    position: relative;
   }
 
   #dino {
-    /* ширина и высота динозаврика */
-    width: 150px;
+    width: 45px;
     height: 50px;
-    /* путь к изображению динозаврика */
-    background-image: url(/img/pepe.PNG);
-    /* ширина и высота подложки */
-    background-size: 50px 50px;
-    /* относительное позиционирование */
+    background-image: url(img/pepe.PNG);
+    background-size: 55px 60px;
     position: relative;
     background-repeat: no-repeat;
-    /* отступ сверху */
-    top: 150px;
-  }
- /* класс анимации прыжка */
-.jump {
-  animation: jump 0.3s linear;
-}
-
-/* 5 ключевых кадров для анимации прыжка */
-@keyframes jump {
-  0% {
-    /* начальная позиция */
     top: 150px;
   }
 
-  30% {
-    /* начало прыжка */
-    top: 130px;
+  .jump {
+    animation: jump 0.3s linear;
   }
 
-  50% {
-    /* самая высокая точка прыжка */
-    top: 80px;
+  @keyframes jump {
+    0% { top: 150px; }
+    30% { top: 130px; }
+    50% { top: 80px; }
+    80% { top: 130px; }
+    100% { top: 150px; }
   }
-
-  80% {
-    /* начало спуска */
-    top: 130px;
-  }
-
-  100% {
-    /* возврат в начальную позицию */
-    top: 150px;
-  }
-}
 
   #cactus {
-    /* ширина и высота кактуса */
-    width: 100px;
+    width: 35px;
     height: 45px;
-    /* относительное позиционирование */
     position: relative;
-    /* начальное положение кактуса */
     top: 110px;
-    left: 580px;
-    /* путь к изображению кактуса*/
-    background-image: url("/img/kaktus.PNG");
+    left: 560px;
+    background-image: url("img/kaktus.PNG");
     background-repeat: no-repeat;
-    /* ширина и высота подложки */
-    background-size: 20px 40px;
-    /* анимация перемещения кактуса */
+    background-size: 40px 45px;
+    background-position: -5px 0;
     animation: block 2s infinite linear;
   }
+
   @keyframes block {
-    /* начальная позиция кактуса (справа) */
-    0% {
-      left: 580px;
-    }
-    /* конечная позиция кактуса (слева, за пределами экрана) */
-    100% {
-      left: -20px;
-    }
+    0% { left: 580px; }
+    100% { left: -20px; }
   }
 
+  #coin {
+    width: 30px;
+    height: 30px;
+    position: relative;
+    top: 50px;
+    left: 560px;
+    background-image: url("img/monetla.PNG");
+    background-repeat: no-repeat;
+    background-size: 30px 30px;
+    display: none;
+    animation: coinMove 70s linear;
+  }
+
+  @keyframes coinMove {
+    0% { left: 600px; }
+    100% { left: -20px; }
+  }
+
+  #score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    color: black;
+  }
