@@ -155,7 +155,7 @@
     <div id="dino"></div>
     <div id="cactus"></div>
     <div id="coin"></div>
-    <div id="score">Счёт: 0</div>
+    <div id="score">0/100</div>
   </div>
 
   <button id="jump-button">Прыжок</button>
@@ -254,7 +254,7 @@ function resetGame() {
   isJumping = false;
   jumpVelocity = 0;
   
-  scoreDisplay.textContent = `Счёт: ${score}`;
+  scoreDisplay.textContent = `${score}/100`;
   cactus.style.animation = "block 2s infinite linear";
   cactus.style.animationPlayState = "running";
   coin.style.display = "none";
@@ -297,7 +297,7 @@ function startGameLoop() {
       coinRect.bottom > dinoRect.top + 5
     ) {
       score += 1;
-      scoreDisplay.textContent = `Счёт: ${score}`;
+      scoreDisplay.textContent = `${score}/100`;
       coin.style.display = "none";
       
       if (score >= 100) {
