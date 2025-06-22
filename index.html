@@ -45,19 +45,23 @@
   /* Автоматическое определение системной тёмной темы */
   @media (prefers-color-scheme: dark) {
     body {
-      background: linear-gradient(358deg, rgba(30, 30, 30, 1) 0%, rgba(60, 50, 100, 1) 50%, rgba(40, 20, 80, 1) 100%);
+      background: linear-gradient(358deg, rgba(70, 50, 140, 1) 0%, rgba(100, 80, 180, 1) 50%, rgba(130, 110, 220, 1) 100%);
     }
     #score {
-      color: #000000 !important;
+      color: #ffffff !important;
     }
   }
   
   /* Стили для тёмной темы Telegram */
   html[data-theme="dark"] body {
-    background: linear-gradient(358deg, rgba(30, 30, 30, 1) 0%, rgba(60, 50, 100, 1) 50%, rgba(40, 20, 80, 1) 100%);
+    background: linear-gradient(358deg, rgba(70, 50, 140, 1) 0%, rgba(100, 80, 180, 1) 50%, rgba(130, 110, 220, 1) 100%);
   }
   html[data-theme="dark"] #score {
     color: #ffffff !important;
+  }
+  html[data-theme="dark"] .game {
+    background-color: #1e1e1e;
+    border-color: #555;
   }
 
   .game {
@@ -69,11 +73,6 @@
     overflow: hidden;
     background-color: #ffffff;
     margin-bottom: 20px;
-  }
-
-  html[data-theme="dark"] .game {
-    background: linear-gradient(358deg, rgba(30, 30, 30, 1) 0%, rgba(60, 50, 100, 1) 50%, rgba(40, 20, 80, 1) 100%);
-    border-color: #555;
   }
 
   #dino {
