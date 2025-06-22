@@ -2,22 +2,28 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Игра с динозавриком</title>
-</head>
-<body>
-<div class="game">
-  <div id="dino"></div>
-  <div id="cactus"></div>
-  <div id="coin"></div>
-  <div id="score">Счёт: 0</div>
-  <style>
+<style>
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    user-select: none;
+  }
+  
+  html, body {
+    overflow-x: hidden;
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+  
   .game {
     width: 600px;
     height: 200px;
     border: 1px solid rgb(122, 122, 122);
     margin: auto;
     position: relative;
+    overflow: hidden;
   }
 
   #dino {
@@ -25,34 +31,24 @@
     height: 50px;
     background-image: url(img/pepe.PNG);
     background-size: 55px 60px;
-    position: relative;
+    position: absolute;
     background-repeat: no-repeat;
     top: 150px;
-  }
-
-  .jump {
-    animation: jump 0.3s linear;
-  }
-
-  @keyframes jump {
-    0% { top: 150px; }
-    30% { top: 130px; }
-    50% { top: 80px; }
-    80% { top: 130px; }
-    100% { top: 150px; }
+    left: 50px;
+    transition: none;
   }
 
   #cactus {
     width: 30px;
     height: 45px;
-    position: relative;
-    top: 110px;
+    position: absolute;
+    top: 155px;
     left: 560px;
     background-image: url("img/kaktus.PNG");
     background-repeat: no-repeat;
     background-size: 40px 45px;
     background-position: -5px 0;
-    animation: block 2s infinite linear;
+    animation: block 3s infinite linear;
     animation-play-state: paused;
   }
 
@@ -64,7 +60,7 @@
   #coin {
     width: 30px;
     height: 30px;
-    position: relative;
+    position: absolute;
     top: 50px;
     left: 560px;
     background-image: url("img/monetla.PNG");
@@ -86,6 +82,7 @@
     font-family: Arial, sans-serif;
     font-size: 20px;
     color: black;
+    z-index: 10;
   }
 
   #jump-button {
@@ -93,8 +90,17 @@
     margin: 10px auto;
     padding: 15px 30px;
     font-size: 18px;
+    cursor: pointer;
+    touch-action: manipulation;
   }
-  </style>
+</style>
+</head>
+<body>
+<div class="game">
+  <div id="dino"></div>
+  <div id="cactus"></div>
+  <div id="coin"></div>
+  <div id="score">Счёт: 0</div>
 </div>
 
 <button id="jump-button">Прыжок</button>
@@ -110,30 +116,69 @@ let gameActive = false;
 let isAlive;
 let coinInterval;
 
-// Инициализация: останавливаем анимацию кактуса
+// Переменные для управления прыжком
+let isJumping = false;
+let jumpVelocity = 0;
+const gravity = 1.5;
+const jumpPower = -25;
+let dinoY = 150;
+
+// Инициализация
 cactus.style.animationPlayState = "paused";
 
-// Функция прыжка
-function jump() {
-  if (dino.classList != "jump" && gameActive) {
-    dino.classList.add("jump");
-    setTimeout(function () {
-      dino.classList.remove("jump");
-    }, 300);
+// Предотвращаем двойное нажатие
+function preventDoubleTapZoom(event) {
+  if (event.touches.length > 1) {
+    event.preventDefault();
   }
+}
+
+document.addEventListener('touchmove', preventDoubleTapZoom, { passive: false });
+document.addEventListener('dblclick', (e) => e.preventDefault());
+
+// Новая функция прыжка на основе физики
+function jump() {
+  if (!isJumping && gameActive) {
+    isJumping = true;
+    jumpVelocity = jumpPower;
+  }
+}
+
+// Обновление позиции динозавра
+function updateDinoPosition() {
+  if (!isJumping) return;
+  
+  dinoY += jumpVelocity;
+  jumpVelocity += gravity;
+  
+  // Проверка приземления
+  if (dinoY >= 150) {
+    dinoY = 150;
+    isJumping = false;
+    jumpVelocity = 0;
+  }
+  
+  dino.style.top = dinoY + 'px';
 }
 
 // Функция перезапуска игры
 function resetGame() {
   gameActive = true;
   score = 0;
+  dinoY = 150;
+  dino.style.top = '150px';
+  isJumping = false;
+  jumpVelocity = 0;
+  
   scoreDisplay.textContent = `Счёт: ${score}`;
   cactus.style.animation = "block 2s infinite linear";
   cactus.style.animationPlayState = "running";
   coin.style.display = "none";
   coin.style.animation = "none";
+  
   if (isAlive) clearInterval(isAlive);
   startGameLoop();
+  
   if (coinInterval) clearInterval(coinInterval);
   coinInterval = setInterval(spawnCoin, 3000);
 }
@@ -142,63 +187,79 @@ function resetGame() {
 function startGameLoop() {
   isAlive = setInterval(function () {
     if (!gameActive) return;
-
-    let dinoTop = parseInt(window.getComputedStyle(dino).getPropertyValue("top"));
-    let cactusLeft = parseInt(window.getComputedStyle(cactus).getPropertyValue("left"));
-    let coinLeft = parseInt(window.getComputedStyle(coin).getPropertyValue("left"));
+    
+    updateDinoPosition();
+    
+    let dinoRect = dino.getBoundingClientRect();
+    let cactusRect = cactus.getBoundingClientRect();
+    let coinRect = coin.getBoundingClientRect();
 
     // Столкновение с кактусом
-    if (cactusLeft < 50 && cactusLeft > 0 && dinoTop >= 140) {
-      gameActive = false;
-      clearInterval(coinInterval);
-      cactus.style.animationPlayState = "paused";
-      coin.style.animationPlayState = "paused";
-      alert("Потрачено! Нажмите на кнопку для перезапуска.");
+    if (
+      cactusRect.left < dinoRect.right - 10 &&
+      cactusRect.right > dinoRect.left + 10 &&
+      cactusRect.top < dinoRect.bottom &&
+      cactusRect.bottom > dinoRect.top
+    ) {
+      endGame("Потрачено! Нажмите на кнопку для перезапуска.");
     }
 
     // Сбор монеты
-    if (coin.style.display === "block" && coinLeft < 50 && coinLeft > 0 && dinoTop <= 140) {
+    if (
+      coin.style.display === "block" &&
+      coinRect.left < dinoRect.right - 5 &&
+      coinRect.right > dinoRect.left + 5 &&
+      coinRect.top < dinoRect.bottom - 5 &&
+      coinRect.bottom > dinoRect.top + 5
+    ) {
       score += 1;
       scoreDisplay.textContent = `Счёт: ${score}`;
       coin.style.display = "none";
+      
       if (score >= 100) {
-        gameActive = false;
-        clearInterval(coinInterval);
-        cactus.style.animationPlayState = "paused";
-        coin.style.animationPlayState = "paused";
-        alert("Победа! Вы набрали 100 монет! Нажмите на кнопку для перезапуска.");
+        endGame("Победа! Вы набрали 100 монет! Нажмите на кнопку для перезапуска.");
       }
     }
-  }, 10);
+  }, 20);
 }
 
-// Спавн монетного дрона каждую секунду
+function endGame(message) {
+  gameActive = false;
+  clearInterval(coinInterval);
+  cactus.style.animationPlayState = "paused";
+  coin.style.animationPlayState = "paused";
+  alert(message);
+}
+
+// Спавн монеты
 function spawnCoin() {
   if (gameActive) {
     coin.style.display = "block";
     coin.style.animation = "none";
-    coin.offsetHeight; // Триггер для рестарта анимации
+    void coin.offsetWidth;
     coin.style.animation = "coinMove 3s linear";
   }
 }
 
-// Обработчик нажатия клавиши (для совместимости с ПК)
+// Обработчики событий
 document.addEventListener("keydown", function (event) {
-  if (event.key === " " && gameActive) {
-    jump();
-  } else if (event.key === " " && !gameActive) {
-    resetGame();
+  if (event.key === " " || event.key === "ArrowUp") {
+    if (gameActive) jump();
+    else resetGame();
   }
 });
 
-// Обработчик кнопки прыжка
 jumpButton.addEventListener("click", function() {
-  if (!gameActive) {
-    resetGame();
-  } else {
-    jump();
-  }
+  if (!gameActive) resetGame();
+  else jump();
 });
+
+// Предотвращение масштабирования на мобильных устройствах
+jumpButton.addEventListener("touchend", function(e) {
+  e.preventDefault();
+  if (!gameActive) resetGame();
+  else jump();
+}, { passive: false });
 </script>
 </body>
 </html>
