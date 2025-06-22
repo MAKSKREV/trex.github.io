@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Игра с динозавриком</title>
-<link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="game">
@@ -12,11 +11,187 @@
   <div id="cactus"></div>
   <div id="coin"></div>
   <div id="score">Счёт: 0</div>
+  <style>
+  .game {
+    width: 600px;
+    height: 200px;
+    border: 1px solid rgb(122, 122, 122);
+    margin: auto;
+    position: relative;
+  }
 
+  #dino {
+    width: 45px;
+    height: 50px;
+    background-image: url(img/pepe.PNG);
+    background-size: 55px 60px;
+    position: relative;
+    background-repeat: no-repeat;
+    top: 150px;
+  }
+
+  .jump {
+    animation: jump 0.3s linear;
+  }
+
+  @keyframes jump {
+    0% { top: 150px; }
+    30% { top: 130px; }
+    50% { top: 80px; }
+    80% { top: 130px; }
+    100% { top: 150px; }
+  }
+
+  #cactus {
+    width: 35px;
+    height: 45px;
+    position: relative;
+    top: 110px;
+    left: 560px;
+    background-image: url("img/kaktus.PNG");
+    background-repeat: no-repeat;
+    background-size: 40px 45px;
+    background-position: -5px 0;
+    animation: block 2s infinite linear;
+  }
+
+  @keyframes block {
+    0% { left: 580px; }
+    100% { left: -20px; }
+  }
+
+  #coin {
+    width: 30px;
+    height: 30px;
+    position: relative;
+    top: 120px;
+    left: 560px;
+    background-image: url("img/monetka.PNG");
+    background-repeat: no-repeat;
+    background-size: 30px 30px;
+    display: none;
+    animation: coinMove 3s linear;
+  }
+
+  @keyframes coinMove {
+    0% { left: 580px; }
+    100% { left: 0px; }
+  }
+
+  #score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    font-family: Arial, sans-serif;
+    font-size: 20px;
+    color: black;
+  }
+
+  #jump-button {
+    display: block;
+    margin: 10px auto;
+    padding: 10px 20px;
+    font-size: 16px;
+  }
+  </style>
 </div>
 
-<script src="/script.js">
+<button id="jump-button">Прыжок</button>
 
+<script>
+const dino = document.getElementById("dino");
+const cactus = document.getElementById("cactus");
+const coin = document.getElementById("coin");
+const scoreDisplay = document.getElementById("score");
+let score = 0;
+let gameActive = true;
+let isAlive;
+
+// Функция прыжка
+function jump() {
+  if (dino.classList != "jump" && gameActive) {
+    dino.classList.add("jump");
+    setTimeout(function () {
+      dino.classList.remove("jump");
+    }, 300);
+  }
+}
+
+// Функция перезапуска игры
+function resetGame() {
+  gameActive = true;
+  score = 0;
+  scoreDisplay.textContent = `Счёт: ${score}`;
+  cactus.style.animation = "block 2s infinite linear";
+  cactus.style.animationPlayState = "running";
+  coin.style.display = "none";
+  coin.style.animation = "none";
+  clearInterval(isAlive);
+  startGameLoop();
+  clearInterval(coinInterval);
+  coinInterval = setInterval(spawnCoin, 1000);
+}
+
+// Запуск игрового цикла
+function startGameLoop() {
+  isAlive = setInterval(function () {
+    if (!gameActive) return;
+
+    let dinoTop = parseInt(window.getComputedStyle(dino).getPropertyValue("top"));
+    let cactusLeft = parseInt(window.getComputedStyle(cactus).getPropertyValue("left"));
+    let coinLeft = parseInt(window.getComputedStyle(coin).getPropertyValue("left"));
+
+    // Столкновение с кактусом
+    if (cactusLeft < 50 && cactusLeft > 0 && dinoTop >= 140) {
+      gameActive = false;
+      clearInterval(coinInterval);
+      cactus.style.animationPlayState = "paused";
+      coin.style.animationPlayState = "paused";
+      alert("Потрачено! Нажмите пробел для перезапуска.");
+    }
+
+    // Сбор монеты
+    if (coin.style.display === "block" && coinLeft < 50 && coinLeft > 0 && dinoTop <= 140) {
+      score += 1;
+      scoreDisplay.textContent = `Счёт: ${score}`;
+      coin.style.display = "none";
+      if (score >= 100) {
+        gameActive = false;
+        clearInterval(coinInterval);
+        cactus.style.animationPlayState = "paused";
+        coin.style.animationPlayState = "paused";
+        alert("Победа! Вы набрали 100 монет! Нажмите пробел для перезапуска.");
+      }
+    }
+  }, 10);
+}
+
+// Спавн монетного дрона каждую секунду
+function spawnCoin() {
+  if (gameActive) {
+    coin.style.display = "block";
+    coin.style.animation = "none";
+    coin.offsetHeight; // Триггер для рестарта анимации
+    coin.style.animation = "coinMove 3s linear";
+  }
+}
+
+// Обработчик нажатия клавиши
+document.addEventListener("keydown", function (event) {
+  if (event.key === " " && gameActive) {
+    jump();
+  } else if (event.key === " " && !gameActive) {
+    resetGame();
+  }
+});
+
+// Добавляем обработчик для кнопки прыжка
+const jumpButton = document.getElementById("jump-button");
+jumpButton.addEventListener("click", jump);
+
+// Запускаем игру
+startGameLoop();
+let coinInterval = setInterval(spawnCoin, 1000);
 </script>
 </body>
 </html>
