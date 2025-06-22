@@ -9,42 +9,66 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
     user-select: none;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
   }
   
   html, body {
+    width: 100%;
+    height: 100%;
     overflow-x: hidden;
     touch-action: manipulation;
     overscroll-behavior: none;
-    background: linear-gradient(358deg,rgba(255, 255, 255, 1) 0%, rgba(175, 167, 235, 1) 50%, rgba(149, 133, 255, 1) 100%);
+    background: linear-gradient(358deg, rgba(255, 255, 255, 1) 0%, rgba(175, 167, 235, 1) 50%, rgba(149, 133, 255, 1) 100%);
     background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  
+  .container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
+    top: 0%;
+    position: absolute;
   }
   
   /* Автоматическое определение системной тёмной темы */
   @media (prefers-color-scheme: dark) {
     body {
-      background: linear-gradient(358deg,rgba(255, 255, 255, 1) 0%, rgba(175, 167, 235, 1) 50%, rgba(149, 133, 255, 1) 100%);;
+      background: linear-gradient(358deg, rgba(30, 30, 30, 1) 0%, rgba(60, 50, 100, 1) 50%, rgba(40, 20, 80, 1) 100%);
     }
     #score {
-      color: #000000 !important;
+      color: #ffffff !important;
     }
   }
   
   /* Стили для тёмной темы Telegram */
   html[data-theme="dark"] body {
-    background-color: #c01e1e;
+    background: linear-gradient(358deg, rgba(30, 30, 30, 1) 0%, rgba(60, 50, 100, 1) 50%, rgba(40, 20, 80, 1) 100%);
   }
   html[data-theme="dark"] #score {
     color: #ffffff !important;
   }
 
   .game {
-    width: 600px;
+    width: 100%;
+    max-width: 600px;
     height: 200px;
     border: 1px solid rgb(122, 122, 122);
-    margin: auto;
     position: relative;
     overflow: hidden;
     background-color: #ffffff;
+    margin-bottom: 20px;
   }
 
   html[data-theme="dark"] .game {
@@ -113,7 +137,6 @@
 
   #jump-button {
     display: block;
-    margin: 10px auto;
     padding: 15px 30px;
     font-size: 18px;
     cursor: pointer;
@@ -122,18 +145,22 @@
     color: white;
     border: none;
     border-radius: 5px;
+    width: 100%;
+    max-width: 600px;
   }
 </style>
 </head>
 <body>
-<div class="game">
-  <div id="dino"></div>
-  <div id="cactus"></div>
-  <div id="coin"></div>
-  <div id="score">Счёт: 0</div>
-</div>
+<div class="container">
+  <div class="game">
+    <div id="dino"></div>
+    <div id="cactus"></div>
+    <div id="coin"></div>
+    <div id="score">Счёт: 0</div>
+  </div>
 
-<button id="jump-button">Прыжок</button>
+  <button id="jump-button">Прыжок</button>
+</div>
 
 <script>
 const dino = document.getElementById("dino");
