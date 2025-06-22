@@ -43,7 +43,7 @@
   }
 
   #cactus {
-    width: 35px;
+    width: 30px;
     height: 45px;
     position: relative;
     top: 110px;
@@ -53,6 +53,7 @@
     background-size: 40px 45px;
     background-position: -5px 0;
     animation: block 2s infinite linear;
+    animation-play-state: paused;
   }
 
   @keyframes block {
@@ -64,18 +65,18 @@
     width: 30px;
     height: 30px;
     position: relative;
-    top: 120px;
+    top: 50px;
     left: 560px;
-    background-image: url("img/monetka.PNG");
+    background-image: url("img/monetla.PNG");
     background-repeat: no-repeat;
     background-size: 30px 30px;
     display: none;
-    animation: coinMove 3s linear;
+    animation: coinMove 8s linear;
   }
 
   @keyframes coinMove {
     0% { left: 580px; }
-    100% { left: 0px; }
+    100% { left: -20px; }
   }
 
   #score {
@@ -90,8 +91,8 @@
   #jump-button {
     display: block;
     margin: 10px auto;
-    padding: 10px 20px;
-    font-size: 16px;
+    padding: 15px 30px;
+    font-size: 18px;
   }
   </style>
 </div>
@@ -103,9 +104,14 @@ const dino = document.getElementById("dino");
 const cactus = document.getElementById("cactus");
 const coin = document.getElementById("coin");
 const scoreDisplay = document.getElementById("score");
+const jumpButton = document.getElementById("jump-button");
 let score = 0;
-let gameActive = true;
+let gameActive = false;
 let isAlive;
+let coinInterval;
+
+// Инициализация: останавливаем анимацию кактуса
+cactus.style.animationPlayState = "paused";
 
 // Функция прыжка
 function jump() {
@@ -126,10 +132,10 @@ function resetGame() {
   cactus.style.animationPlayState = "running";
   coin.style.display = "none";
   coin.style.animation = "none";
-  clearInterval(isAlive);
+  if (isAlive) clearInterval(isAlive);
   startGameLoop();
-  clearInterval(coinInterval);
-  coinInterval = setInterval(spawnCoin, 1000);
+  if (coinInterval) clearInterval(coinInterval);
+  coinInterval = setInterval(spawnCoin, 3000);
 }
 
 // Запуск игрового цикла
@@ -147,7 +153,7 @@ function startGameLoop() {
       clearInterval(coinInterval);
       cactus.style.animationPlayState = "paused";
       coin.style.animationPlayState = "paused";
-      alert("Потрачено! Нажмите пробел для перезапуска.");
+      alert("Потрачено! Нажмите на кнопку для перезапуска.");
     }
 
     // Сбор монеты
@@ -160,7 +166,7 @@ function startGameLoop() {
         clearInterval(coinInterval);
         cactus.style.animationPlayState = "paused";
         coin.style.animationPlayState = "paused";
-        alert("Победа! Вы набрали 100 монет! Нажмите пробел для перезапуска.");
+        alert("Победа! Вы набрали 100 монет! Нажмите на кнопку для перезапуска.");
       }
     }
   }, 10);
@@ -176,7 +182,7 @@ function spawnCoin() {
   }
 }
 
-// Обработчик нажатия клавиши
+// Обработчик нажатия клавиши (для совместимости с ПК)
 document.addEventListener("keydown", function (event) {
   if (event.key === " " && gameActive) {
     jump();
@@ -185,13 +191,14 @@ document.addEventListener("keydown", function (event) {
   }
 });
 
-// Добавляем обработчик для кнопки прыжка
-const jumpButton = document.getElementById("jump-button");
-jumpButton.addEventListener("click", jump);
-
-// Запускаем игру
-startGameLoop();
-let coinInterval = setInterval(spawnCoin, 1000);
+// Обработчик кнопки прыжка
+jumpButton.addEventListener("click", function() {
+  if (!gameActive) {
+    resetGame();
+  } else {
+    jump();
+  }
+});
 </script>
 </body>
 </html>
