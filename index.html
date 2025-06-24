@@ -42,22 +42,6 @@
     position: absolute;
   }
   
-  /* Автоматическое определение системной тёмной темы */
-  @media (prefers-color-scheme: dark) {
-    body {
-      background: linear-gradient(358deg, rgba(255, 255, 255, 1) 0%, rgba(175, 167, 235, 1) 50%, rgba(149, 133, 255, 1) 100%);
-    }
-  }
-  
-  /* Стили для тёмной темы Telegram */
-  html[data-theme="dark"] body {
-    background: linear-gradient(358deg, rgba(255, 255, 255, 1) 0%, rgba(175, 167, 235, 1) 50%, rgba(149, 133, 255, 1) 100%);
-  }
-  html[data-theme="dark"] .game {
-    background-color: #1e1e1e;
-    border-color: #555;
-  }
-
   .game {
     width: 100%;
     max-width: 600px;
@@ -120,30 +104,28 @@
     100% { left: -20px; }
   }
 
-  /* Прогресс-бар */
-#progress-container {
-  position: absolute;
-  top: 10px;
-  width: 90%;
-  left: 5%;
-  height: 20px;
-  background-color: rgba(226, 215, 215, 0.5);
-  border-radius: 10px;
-  overflow: hidden;
-  z-index: 5;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  border: 1px solid #000000; /* Фиксированная граница */
-}
+  #progress-container {
+    position: absolute;
+    top: 10px;
+    width: 90%;
+    left: 5%;
+    height: 20px;
+    background-color: rgba(226, 215, 215, 0.5);
+    border-radius: 10px;
+    overflow: hidden;
+    z-index: 5;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    border: 1px solid #000000;
+  }
 
-#progress-bar {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #4CAF50, #8BC34A);
-  border-radius: 10px;
-  transition: width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
-  box-sizing: border-box; /* Важно для корректных размеров */
-  /* border: 1px solid #1e1e1e; // Раскомментировать если нужна внутренняя граница */
-}
+  #progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    border-radius: 10px;
+    transition: width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+    box-sizing: border-box;
+  }
 
   #progress-text {
     position: absolute;
@@ -175,24 +157,6 @@
   
   #jump-button:active {
     background-color: rgb(30, 19, 117);
-  }
-
-  #jump-button::before,
-  #jump-button::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgb(30, 19, 117);
-    opacity: 0;
-    transition: opacity 0.3s;
-    z-index: -1;
-  }
-
-  #jump-button:hover::before {
-    opacity: 0.2;
   }
   
   #jump-button.disabled {
@@ -254,6 +218,9 @@ const progressText = document.getElementById("progress-text");
 const totalCoinsElement = document.getElementById("total-coins");
 const attemptInfoElement = document.getElementById("attempt-info");
 
+// УКАЖИТЕ АДРЕС ВАШЕГО FLASK-СЕРВЕРА
+const SERVER_URL = "http://localhost:5000";
+
 let sessionCoins = 0;
 let gameActive = false;
 let isAlive;
@@ -271,38 +238,6 @@ let dinoY = 150;
 
 // Инициализация
 cactus.style.animationPlayState = "paused";
-
-// Определяем тему Telegram
-function detectTelegramTheme() {
-  if (document.documentElement.getAttribute('data-theme') === 'dark') {
-    document.body.classList.add('telegram-dark');
-  }
-  
-  const observer = new MutationObserver(() => {
-    if (document.documentElement.getAttribute('data-theme') === 'dark') {
-      document.body.classList.add('telegram-dark');
-    } else {
-      document.body.classList.remove('telegram-dark');
-    }
-  });
-  
-  observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['data-theme']
-  });
-}
-
-detectTelegramTheme();
-
-// Предотвращаем двойное нажатие
-function preventDoubleTapZoom(event) {
-  if (event.touches.length > 1) {
-    event.preventDefault();
-  }
-}
-
-document.addEventListener('touchmove', preventDoubleTapZoom, { passive: false });
-document.addEventListener('dblclick', (e) => e.preventDefault());
 
 function jump() {
   if (!isJumping && gameActive && canPlay) {
@@ -467,35 +402,36 @@ function initTelegramWebApp() {
   } else {
     console.log("Не в среде Telegram WebApp");
     // Для тестирования вне Telegram
-    userId = "demo_user";
+    userId = 1; // Тестовый ID пользователя
     fetchUserData();
   }
 }
 
-// Получение данных пользователя
-function fetchUserData() {
+// Получение данных пользователя С СЕРВЕРА
+async function fetchUserData() {
   try {
-    // Получаем данные из localStorage
-    const savedData = localStorage.getItem(`user_${userId}`);
+    const response = await fetch(`${SERVER_URL}/get_user_data?user_id=${userId}`);
     
-    let coins = 0;
-    let lastGameDate = 0;
-    
-    if (savedData) {
-      const data = JSON.parse(savedData);
-      coins = data.coins || 0;
-      lastGameDate = data.lastGameDate || 0;
+    if (!response.ok) {
+      throw new Error(`Ошибка сервера: ${response.status}`);
     }
     
-    totalCoins = coins;
+    const data = await response.json();
+    
+    if (data.error) {
+      showError(data.error);
+      return;
+    }
+    
+    totalCoins = parseFloat(data.coins) || 0;
+    const lastGameDate = parseInt(data.last_game_date) || 0;
     
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const lastGameDay = lastGameDate ? new Date(lastGameDate).getDate() : 0;
-    const todayDate = now.getDate();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const lastGameDay = lastGameDate > 0 ? new Date(lastGameDate * 1000) : null;
     
     // Проверяем, играл ли пользователь сегодня
-    if (!lastGameDate || lastGameDay !== todayDate) {
+    if (!lastGameDay || lastGameDay < today) {
       canPlay = true;
       attemptInfoElement.textContent = "Попытка доступна!";
     } else {
@@ -512,31 +448,43 @@ function fetchUserData() {
   }
 }
 
-// Сохранение результата игры
-function saveGameResult() {
+// Сохранение результата игры НА СЕРВЕР
+async function saveGameResult() {
   try {
-    // Обновляем общее количество монет
-    totalCoins += sessionCoins;
+    const response = await fetch(`${SERVER_URL}/save_game_result`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        user_id: userId,
+        coins: sessionCoins,
+        game_date: Math.floor(Date.now() / 1000)
+      })
+    });
     
-    // Сохраняем данные в localStorage
-    const userData = {
-      coins: totalCoins,
-      lastGameDate: new Date().getTime() // Текущее время в миллисекундах
-    };
+    if (!response.ok) {
+      throw new Error(`Ошибка сервера: ${response.status}`);
+    }
     
-    localStorage.setItem(`user_${userId}`, JSON.stringify(userData));
+    const result = await response.json();
     
-    updateUI();
-    return true;
+    if (result.success) {
+      // Обновляем общее количество монет
+      totalCoins += sessionCoins;
+      updateUI();
+      return true;
+    } else {
+      throw new Error(result.error || "Неизвестная ошибка сервера");
+    }
   } catch (error) {
     console.error("Ошибка сохранения:", error);
+    alert("Ошибка сохранения результата: " + error.message);
     return false;
   }
 }
 
 // Обновление интерфейса
 function updateUI() {
-  totalCoinsElement.textContent = totalCoins;
+  totalCoinsElement.textContent = totalCoins.toFixed(2);
 }
 
 // Показать ошибку
@@ -559,7 +507,7 @@ jumpButton.addEventListener("click", function() {
   else if (gameActive) jump();
 });
 
-// Предотвращение масштабирования на мобильных устройствах
+// Предотвращение масштабирования
 jumpButton.addEventListener("touchend", function(e) {
   e.preventDefault();
   if (!gameActive && canPlay) resetGame();
