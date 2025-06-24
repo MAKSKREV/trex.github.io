@@ -38,7 +38,7 @@
     width: 100%;
     max-width: 600px;
     padding: 20px;
-    top: 0%;
+    top: 30%;
     position: absolute;
   }
   
@@ -47,17 +47,11 @@
     body {
       background: linear-gradient(358deg, rgba(255, 255, 255, 1) 0%, rgba(175, 167, 235, 1) 50%, rgba(149, 133, 255, 1) 100%);
     }
-    #score {
-      color: #000000 !important;
-    }
   }
   
   /* Стили для тёмной темы Telegram */
   html[data-theme="dark"] body {
     background: linear-gradient(358deg, rgba(255, 255, 255, 1) 0%, rgba(175, 167, 235, 1) 50%, rgba(149, 133, 255, 1) 100%);
-  }
-  html[data-theme="dark"] #score {
-    color: #000000 !important;
   }
   html[data-theme="dark"] .game {
     background-color: #1e1e1e;
@@ -73,6 +67,8 @@
     overflow: hidden;
     background-color: #ffffff;
     margin-bottom: 20px;
+    border-radius: 25px;
+    border: none;
   }
 
   #dino {
@@ -124,14 +120,42 @@
     100% { left: -20px; }
   }
 
-  #score {
+  /* Прогресс-бар */
+#progress-container {
+  position: absolute;
+  top: 10px;
+  width: 90%;
+  left: 5%;
+  height: 20px;
+  background-color: rgba(226, 215, 215, 0.5);
+  border-radius: 10px;
+  overflow: hidden;
+  z-index: 5;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  border: 1px solid #000000; /* Фиксированная граница */
+}
+
+#progress-bar {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #4CAF50, #8BC34A);
+  border-radius: 10px;
+  transition: width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+  box-sizing: border-box; /* Важно для корректных размеров */
+  /* border: 1px solid #1e1e1e; // Раскомментировать если нужна внутренняя граница */
+}
+
+  #progress-text {
     position: absolute;
-    top: 10px;
-    left: 260px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     font-family: Arial, sans-serif;
-    font-size: 20px;
-    color: black; /* Цвет по умолчанию для светлой темы */
-    z-index: 10;
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    z-index: 6;
+    text-shadow: 0 0 2px white;
   }
 
   #jump-button {
@@ -146,16 +170,75 @@
     border-radius: 25px;
     width: 100%;
     max-width: 600px;
+    transition: background-color 0.1s ease-in-out;
+  }
+  
+  #jump-button:active {
+    background-color: rgb(30, 19, 117);
+  }
+
+  #jump-button::before,
+  #jump-button::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(30, 19, 117);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: -1;
+  }
+
+  #jump-button:hover::before {
+    opacity: 0.2;
+  }
+  
+  #jump-button.disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+  }
+  
+  .info-panel {
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 15px;
+    border-radius: 15px;
+    text-align: center;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  .coins-counter {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  .attempt-info {
+    font-size: 16px;
+    color: #555;
   }
 </style>
 </head>
 <body>
 <div class="container">
+  <div class="info-panel">
+    <div class="coins-counter">Ваши монеты: <span id="total-coins">0</span></div>
+    <div class="attempt-info" id="attempt-info">Попытка доступна!</div>
+  </div>
+  
   <div class="game">
     <div id="dino"></div>
     <div id="cactus"></div>
     <div id="coin"></div>
-    <div id="score">0/100</div>
+    <div id="progress-container">
+      <div id="progress-bar"></div>
+      <div id="progress-text">0/100</div>
+    </div>
   </div>
 
   <button id="jump-button">Прыжок</button>
@@ -165,12 +248,19 @@
 const dino = document.getElementById("dino");
 const cactus = document.getElementById("cactus");
 const coin = document.getElementById("coin");
-const scoreDisplay = document.getElementById("score");
 const jumpButton = document.getElementById("jump-button");
-let score = 0;
+const progressBar = document.getElementById("progress-bar");
+const progressText = document.getElementById("progress-text");
+const totalCoinsElement = document.getElementById("total-coins");
+const attemptInfoElement = document.getElementById("attempt-info");
+
+let sessionCoins = 0;
 let gameActive = false;
 let isAlive;
 let coinInterval;
+let userId = null;
+let totalCoins = 0;
+let canPlay = false;
 
 // Переменные для управления прыжком
 let isJumping = false;
@@ -184,19 +274,14 @@ cactus.style.animationPlayState = "paused";
 
 // Определяем тему Telegram
 function detectTelegramTheme() {
-  // Если Telegram установил атрибут data-theme
   if (document.documentElement.getAttribute('data-theme') === 'dark') {
     document.body.classList.add('telegram-dark');
-    scoreDisplay.style.color = '#ffffff';
   }
   
-  // Добавляем наблюдателя на случай изменения темы
   const observer = new MutationObserver(() => {
     if (document.documentElement.getAttribute('data-theme') === 'dark') {
-      scoreDisplay.style.color = '#ffffff';
       document.body.classList.add('telegram-dark');
     } else {
-      scoreDisplay.style.color = '#000000';
       document.body.classList.remove('telegram-dark');
     }
   });
@@ -207,7 +292,6 @@ function detectTelegramTheme() {
   });
 }
 
-// Запускаем детектор темы Telegram
 detectTelegramTheme();
 
 // Предотвращаем двойное нажатие
@@ -220,9 +304,8 @@ function preventDoubleTapZoom(event) {
 document.addEventListener('touchmove', preventDoubleTapZoom, { passive: false });
 document.addEventListener('dblclick', (e) => e.preventDefault());
 
-// Новая функция прыжка на основе физики
 function jump() {
-  if (!isJumping && gameActive) {
+  if (!isJumping && gameActive && canPlay) {
     isJumping = true;
     jumpVelocity = jumpPower;
   }
@@ -247,14 +330,16 @@ function updateDinoPosition() {
 
 // Функция перезапуска игры
 function resetGame() {
+  if (!canPlay) return;
+  
   gameActive = true;
-  score = 0;
+  sessionCoins = 0;
+  updateProgress();
   dinoY = 150;
   dino.style.top = '150px';
   isJumping = false;
   jumpVelocity = 0;
   
-  scoreDisplay.textContent = `${score}/100`;
   cactus.style.animation = "block 2s infinite linear";
   cactus.style.animationPlayState = "running";
   coin.style.display = "none";
@@ -265,6 +350,24 @@ function resetGame() {
   
   if (coinInterval) clearInterval(coinInterval);
   coinInterval = setInterval(spawnCoin, 3000);
+}
+
+// Обновление прогресс-бара
+function updateProgress() {
+  const progressPercentage = Math.min(100, sessionCoins);
+  progressBar.style.width = `${progressPercentage}%`;
+  progressText.textContent = `${sessionCoins}/100`;
+  
+  // Изменение цвета при заполнении
+  if (sessionCoins >= 100) {
+    progressBar.style.background = 'linear-gradient(90deg, #FF9800, #FF5722)';
+  } else if (sessionCoins >= 70) {
+    progressBar.style.background = 'linear-gradient(90deg, #FFEB3B, #FFC107)';
+  } else if (sessionCoins >= 30) {
+    progressBar.style.background = 'linear-gradient(90deg, #8BC34A, #CDDC39)';
+  } else {
+    progressBar.style.background = 'linear-gradient(90deg, #4CAF50, #8BC34A)';
+  }
 }
 
 // Запуск игрового цикла
@@ -285,7 +388,7 @@ function startGameLoop() {
       cactusRect.top < dinoRect.bottom &&
       cactusRect.bottom > dinoRect.top
     ) {
-      endGame("Потрачено! Нажмите на кнопку для перезапуска.");
+      endGame("Потрачено! Вы собрали " + sessionCoins + " монет.");
     }
 
     // Сбор монеты
@@ -296,23 +399,42 @@ function startGameLoop() {
       coinRect.top < dinoRect.bottom - 5 &&
       coinRect.bottom > dinoRect.top + 5
     ) {
-      score += 1;
-      scoreDisplay.textContent = `${score}/100`;
-      coin.style.display = "none";
-      
-      if (score >= 100) {
-        endGame("Победа! Вы набрали 100 монет! Нажмите на кнопку для перезапуска.");
-      }
+      collectCoin();
     }
   }, 20);
 }
 
+// Сбор монеты
+function collectCoin() {
+  sessionCoins += 1;
+  updateProgress();
+  coin.style.display = "none";
+  
+  if (sessionCoins >= 100) {
+    endGame("Победа! Вы набрали 100 монет!");
+  }
+}
+
+// Завершение игры
 function endGame(message) {
   gameActive = false;
-  clearInterval(coinInterval);
   cactus.style.animationPlayState = "paused";
   coin.style.animationPlayState = "paused";
-  alert(message);
+  
+  if (coinInterval) clearInterval(coinInterval);
+  
+  // Сохраняем результат только если играли
+  if (canPlay) {
+    saveGameResult();
+    canPlay = false;
+    jumpButton.textContent = "Попытка использована";
+    jumpButton.classList.add("disabled");
+    attemptInfoElement.textContent = "Следующая попытка завтра";
+  }
+  
+  setTimeout(() => {
+    alert(message);
+  }, 300);
 }
 
 // Спавн монеты
@@ -322,28 +444,130 @@ function spawnCoin() {
     coin.style.animation = "none";
     void coin.offsetWidth;
     coin.style.animation = "coinMove 3s linear";
+    
+    // Позиционирование монетки на случайной высоте
+    const topPosition = 30 + Math.random() * 120;
+    coin.style.top = `${topPosition}px`;
   }
+}
+
+// Инициализация Telegram WebApp
+function initTelegramWebApp() {
+  if (window.Telegram && window.Telegram.WebApp) {
+    const webApp = Telegram.WebApp;
+    webApp.ready();
+    
+    const user = webApp.initDataUnsafe.user;
+    if (user) {
+      userId = user.id;
+      fetchUserData();
+    } else {
+      showError("Пользователь не определен");
+    }
+  } else {
+    console.log("Не в среде Telegram WebApp");
+    // Для тестирования вне Telegram
+    userId = "demo_user";
+    fetchUserData();
+  }
+}
+
+// Получение данных пользователя
+function fetchUserData() {
+  try {
+    // Получаем данные из localStorage
+    const savedData = localStorage.getItem(`user_${userId}`);
+    
+    let coins = 0;
+    let lastGameDate = 0;
+    
+    if (savedData) {
+      const data = JSON.parse(savedData);
+      coins = data.coins || 0;
+      lastGameDate = data.lastGameDate || 0;
+    }
+    
+    totalCoins = coins;
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const lastGameDay = lastGameDate ? new Date(lastGameDate).getDate() : 0;
+    const todayDate = now.getDate();
+    
+    // Проверяем, играл ли пользователь сегодня
+    if (!lastGameDate || lastGameDay !== todayDate) {
+      canPlay = true;
+      attemptInfoElement.textContent = "Попытка доступна!";
+    } else {
+      canPlay = false;
+      jumpButton.textContent = "Попытка использована";
+      jumpButton.classList.add("disabled");
+      attemptInfoElement.textContent = "Следующая попытка завтра";
+    }
+    
+    updateUI();
+  } catch (error) {
+    console.error("Ошибка загрузки данных:", error);
+    showError("Ошибка загрузки данных");
+  }
+}
+
+// Сохранение результата игры
+function saveGameResult() {
+  try {
+    // Обновляем общее количество монет
+    totalCoins += sessionCoins;
+    
+    // Сохраняем данные в localStorage
+    const userData = {
+      coins: totalCoins,
+      lastGameDate: new Date().getTime() // Текущее время в миллисекундах
+    };
+    
+    localStorage.setItem(`user_${userId}`, JSON.stringify(userData));
+    
+    updateUI();
+    return true;
+  } catch (error) {
+    console.error("Ошибка сохранения:", error);
+    return false;
+  }
+}
+
+// Обновление интерфейса
+function updateUI() {
+  totalCoinsElement.textContent = totalCoins;
+}
+
+// Показать ошибку
+function showError(message) {
+  jumpButton.textContent = message;
+  jumpButton.classList.add("disabled");
+  attemptInfoElement.textContent = "Ошибка загрузки данных";
 }
 
 // Обработчики событий
 document.addEventListener("keydown", function (event) {
-  if (event.key === " " || event.key === "ArrowUp") {
+  if ((event.key === " " || event.key === "ArrowUp") && canPlay) {
     if (gameActive) jump();
     else resetGame();
   }
 });
 
 jumpButton.addEventListener("click", function() {
-  if (!gameActive) resetGame();
-  else jump();
+  if (!gameActive && canPlay) resetGame();
+  else if (gameActive) jump();
 });
 
 // Предотвращение масштабирования на мобильных устройствах
 jumpButton.addEventListener("touchend", function(e) {
   e.preventDefault();
-  if (!gameActive) resetGame();
-  else jump();
+  if (!gameActive && canPlay) resetGame();
+  else if (gameActive) jump();
 }, { passive: false });
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', initTelegramWebApp);
 </script>
 </body>
 </html>
